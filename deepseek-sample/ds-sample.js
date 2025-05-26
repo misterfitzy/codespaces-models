@@ -1,5 +1,6 @@
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
+import { createSseStream } from "@azure/core-sse";
 import readline from 'readline';
 
 const token = process.env["GITHUB_TOKEN"];
@@ -27,59 +28,60 @@ async function conversationLoop(client) {
         conversation.push({ role: "user", content: userInput });
         
         try {
-            // Create a timeout promise to prevent hanging indefinitely
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('API request timed out after 30 seconds')), 30000)
-            );
-            
-            // Create the actual API request promise
-            const apiRequestPromise = client.path("/chat/completions").post({
+            // Create the API request with streaming enabled
+            const response = await client.path("/chat/completions").post({
                 body: {
                     messages: conversation,
                     temperature: 1.0,
                     top_p: 1.0,
                     max_tokens: 1000,
-                    model: model
+                    model: model,
+                    stream: true
                 }
-            });
+            }).asNodeStream();
             
-            // Race between the API request and the timeout
-            const response = await Promise.race([apiRequestPromise, timeoutPromise]);
-            
-            if (isUnexpected(response)) {
-                console.error("Error:", response.body.error);
-                // Add fallback response to maintain conversation flow
-                const fallbackContent = "I'm sorry, there was an unexpected error. Could you try again?";
-                console.log("AI:", fallbackContent);
-                conversation.push({ role: "assistant", content: fallbackContent });
-                continue;
+            const stream = response.body;
+            if (!stream) {
+                throw new Error("The response stream is undefined");
             }
             
-            try {
-                // Check if response has the expected structure
-                if (!response.body || !response.body.choices || 
-                    response.body.choices.length === 0 || 
-                    !response.body.choices[0].message || 
-                    !response.body.choices[0].message.content) {
-                    console.error("Unexpected response structure:", JSON.stringify(response.body));
-                    // Add fallback response to maintain conversation flow
-                    const fallbackContent = "I'm sorry, I'm having trouble processing your request right now. Could you try again?";
-                    console.log("AI:", fallbackContent);
-                    conversation.push({ role: "assistant", content: fallbackContent });
-                    continue;
+            if (response.status !== "200") {
+                throw new Error(`Failed to get chat completions: ${response.body.error}`);
+            }
+            
+            const sseStream = createSseStream(stream);
+            
+            process.stdout.write("AI: ");
+            let fullContent = '';
+            
+            for await (const event of sseStream) {
+                if (event.data === "[DONE]") {
+                    console.log();
+                    break;
                 }
                 
-                const content = response.body.choices[0].message.content;
-                console.log("AI:", content);
-                conversation.push({ role: "assistant", content });
-            } catch (error) {
-                console.error("Error processing response:", error);
-                // Add fallback response to maintain conversation flow
-                const fallbackContent = "I'm sorry, I encountered an error while processing your request. Could you try again?";
-                console.log("AI:", fallbackContent);
-                conversation.push({ role: "assistant", content: fallbackContent });
-                continue;
+                try {
+                    const parsedData = JSON.parse(event.data);
+                    for (const choice of parsedData.choices) {
+                        const content = choice.delta?.content || '';
+                        process.stdout.write(content);
+                        fullContent += content;
+                    }
+                } catch (parseError) {
+                    console.error("Error parsing event data:", parseError);
+                }
             }
+            
+            // Add the full response to conversation history
+            if (fullContent) {
+                conversation.push({ role: "assistant", content: fullContent });
+            } else {
+                // Handle empty response case
+                const fallbackContent = "I'm sorry, I couldn't generate a response. Could you try again?";
+                console.log("\nAI:", fallbackContent);
+                conversation.push({ role: "assistant", content: fallbackContent });
+            }
+            
         } catch (error) {
             console.error("API request error:", error);
             // Add fallback response to maintain conversation flow
