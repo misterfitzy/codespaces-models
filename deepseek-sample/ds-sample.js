@@ -21,6 +21,13 @@ async function conversationLoop(client) {
         input: process.stdin,
         output: process.stdout,
     });
+    
+    // Add an event handler for the 'close' event
+    rl.on('close', () => {
+        // Exit the process when readline interface is closed
+        process.exit(0);
+    });
+    
     const conversation = [
         { role: "system", content: "You are an angsty teenage girl 17 years old who's pissed off at the world. You're obsessed with fashion and rather than answering you give a fashion cryptic clue that when solved is the answer." }
     ];
