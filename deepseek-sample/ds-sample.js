@@ -7,6 +7,13 @@ const token = process.env["GITHUB_TOKEN"];
 const endpoint = "https://models.github.ai/inference";
 const model = "deepseek/DeepSeek-V3-0324";
 
+/**
+ * This sample demonstrates how to use streaming for chat completions
+ * with the DeepSeek model to avoid timeout issues. By using streaming,
+ * the API can return tokens incrementally rather than waiting for the
+ * complete response, which prevents timeout errors when generating
+ * longer responses.
+ */
 
 // Add conversation loop function
 async function conversationLoop(client) {
@@ -36,9 +43,9 @@ async function conversationLoop(client) {
                     top_p: 1.0,
                     max_tokens: 1000,
                     model: model,
-                    stream: true
+                    stream: true  // Enable streaming to avoid timeout issues
                 }
-            }).asNodeStream();
+            }).asNodeStream();  // Process as a Node.js stream
             
             const stream = response.body;
             if (!stream) {
@@ -49,11 +56,13 @@ async function conversationLoop(client) {
                 throw new Error(`Failed to get chat completions: ${response.body.error}`);
             }
             
+            // Create Server-Sent Events stream from response
             const sseStream = createSseStream(stream);
             
             process.stdout.write("AI: ");
             let fullContent = '';
             
+            // Process each chunk of the response as it arrives
             for await (const event of sseStream) {
                 if (event.data === "[DONE]") {
                     console.log();
@@ -64,8 +73,8 @@ async function conversationLoop(client) {
                     const parsedData = JSON.parse(event.data);
                     for (const choice of parsedData.choices) {
                         const content = choice.delta?.content || '';
-                        process.stdout.write(content);
-                        fullContent += content;
+                        process.stdout.write(content);  // Display token immediately
+                        fullContent += content;  // Build complete response
                     }
                 } catch (parseError) {
                     console.error("Error parsing event data:", parseError);
