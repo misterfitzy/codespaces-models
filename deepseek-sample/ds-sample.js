@@ -3,13 +3,13 @@ import { AzureKeyCredential } from "@azure/core-auth";
 import { createSseStream } from "@azure/core-sse";
 import readline from 'readline';
 
-const token = process.env["GITHUB_TOKEN"];
-const endpoint = "https://models.github.ai/inference";
-const model = "deepseek/DeepSeek-V3-0324";
+const token = process.env["AI_FOUNDRY_API_KEY"];
+const endpoint = "https://aistudioaiservices560090294618.services.ai.azure.com/models";
+const model = "gpt-35-turbo"; // Using a default model, adjust as needed for AI Foundry
 
 /**
  * This sample demonstrates how to use streaming for chat completions
- * with the DeepSeek model to avoid timeout issues. By using streaming,
+ * with the AI Foundry API to avoid timeout issues. By using streaming,
  * the API can return tokens incrementally rather than waiting for the
  * complete response, which prevents timeout errors when generating
  * longer responses.
