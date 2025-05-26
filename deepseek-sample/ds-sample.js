@@ -25,22 +25,69 @@ async function conversationLoop(client) {
             break;
         }
         conversation.push({ role: "user", content: userInput });
-        const response = await client.path("/chat/completions").post({
-            body: {
-                messages: conversation,
-                temperature: 1.0,
-                top_p: 1.0,
-                max_tokens: 1000,
-                model: model
+        
+        try {
+            // Create a timeout promise to prevent hanging indefinitely
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('API request timed out after 30 seconds')), 30000)
+            );
+            
+            // Create the actual API request promise
+            const apiRequestPromise = client.path("/chat/completions").post({
+                body: {
+                    messages: conversation,
+                    temperature: 1.0,
+                    top_p: 1.0,
+                    max_tokens: 1000,
+                    model: model
+                }
+            });
+            
+            // Race between the API request and the timeout
+            const response = await Promise.race([apiRequestPromise, timeoutPromise]);
+            
+            if (isUnexpected(response)) {
+                console.error("Error:", response.body.error);
+                // Add fallback response to maintain conversation flow
+                const fallbackContent = "I'm sorry, there was an unexpected error. Could you try again?";
+                console.log("AI:", fallbackContent);
+                conversation.push({ role: "assistant", content: fallbackContent });
+                continue;
             }
-        });
-        if (isUnexpected(response)) {
-            console.error("Error:", response.body.error);
+            
+            try {
+                // Check if response has the expected structure
+                if (!response.body || !response.body.choices || 
+                    response.body.choices.length === 0 || 
+                    !response.body.choices[0].message || 
+                    !response.body.choices[0].message.content) {
+                    console.error("Unexpected response structure:", JSON.stringify(response.body));
+                    // Add fallback response to maintain conversation flow
+                    const fallbackContent = "I'm sorry, I'm having trouble processing your request right now. Could you try again?";
+                    console.log("AI:", fallbackContent);
+                    conversation.push({ role: "assistant", content: fallbackContent });
+                    continue;
+                }
+                
+                const content = response.body.choices[0].message.content;
+                console.log("AI:", content);
+                conversation.push({ role: "assistant", content });
+            } catch (error) {
+                console.error("Error processing response:", error);
+                // Add fallback response to maintain conversation flow
+                const fallbackContent = "I'm sorry, I encountered an error while processing your request. Could you try again?";
+                console.log("AI:", fallbackContent);
+                conversation.push({ role: "assistant", content: fallbackContent });
+                continue;
+            }
+        } catch (error) {
+            console.error("API request error:", error);
+            // Add fallback response to maintain conversation flow
+            const fallbackContent = "I'm sorry, there was an error communicating with the API. Could you try again later?";
+            console.log("AI:", fallbackContent);
+            conversation.push({ role: "assistant", content: fallbackContent });
             continue;
         }
-        const content = response.body.choices[0].message.content;
-        console.log("AI:", content);
-        conversation.push({ role: "assistant", content });
     }
     rl.close();
 }
