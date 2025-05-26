@@ -25,22 +25,44 @@ async function conversationLoop(client) {
             break;
         }
         conversation.push({ role: "user", content: userInput });
-        const response = await client.path("/chat/completions").post({
-            body: {
-                messages: conversation,
-                temperature: 1.0,
-                top_p: 1.0,
-                max_tokens: 1000,
-                model: model
+        
+        try {
+            const response = await client.path("/chat/completions").post({
+                body: {
+                    messages: conversation,
+                    temperature: 1.0,
+                    top_p: 1.0,
+                    max_tokens: 1000,
+                    model: model
+                }
+            });
+            
+            if (isUnexpected(response)) {
+                console.error("Error:", response.body.error);
+                continue;
             }
-        });
-        if (isUnexpected(response)) {
-            console.error("Error:", response.body.error);
+            
+            try {
+                // Check if response has the expected structure
+                if (!response.body || !response.body.choices || 
+                    response.body.choices.length === 0 || 
+                    !response.body.choices[0].message || 
+                    !response.body.choices[0].message.content) {
+                    console.error("Unexpected response structure:", JSON.stringify(response.body));
+                    continue;
+                }
+                
+                const content = response.body.choices[0].message.content;
+                console.log("AI:", content);
+                conversation.push({ role: "assistant", content });
+            } catch (error) {
+                console.error("Error processing response:", error);
+                continue;
+            }
+        } catch (error) {
+            console.error("API request error:", error);
             continue;
         }
-        const content = response.body.choices[0].message.content;
-        console.log("AI:", content);
-        conversation.push({ role: "assistant", content });
     }
     rl.close();
 }
