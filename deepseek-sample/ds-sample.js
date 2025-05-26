@@ -5,6 +5,7 @@ import readline from 'readline';
 
 const token = process.env["AI_FOUNDRY_API_KEY"];
 const endpoint = "https://aistudioaiservices560090294618.services.ai.azure.com/models";
+// Note: You may need to adjust the model name based on available models in your AI Foundry instance
 const model = "gpt-35-turbo"; // Using a default model, adjust as needed for AI Foundry
 
 /**
@@ -36,6 +37,7 @@ async function conversationLoop(client) {
         
         try {
             // Create the API request with streaming enabled
+            // Note: The API path may need adjustment based on AI Foundry's specific endpoint structure
             const response = await client.path("/chat/completions").post({
                 body: {
                     messages: conversation,
