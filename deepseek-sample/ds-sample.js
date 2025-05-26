@@ -27,7 +27,13 @@ async function conversationLoop(client) {
         conversation.push({ role: "user", content: userInput });
         
         try {
-            const response = await client.path("/chat/completions").post({
+            // Create a timeout promise to prevent hanging indefinitely
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('API request timed out after 30 seconds')), 30000)
+            );
+            
+            // Create the actual API request promise
+            const apiRequestPromise = client.path("/chat/completions").post({
                 body: {
                     messages: conversation,
                     temperature: 1.0,
@@ -36,6 +42,9 @@ async function conversationLoop(client) {
                     model: model
                 }
             });
+            
+            // Race between the API request and the timeout
+            const response = await Promise.race([apiRequestPromise, timeoutPromise]);
             
             if (isUnexpected(response)) {
                 console.error("Error:", response.body.error);
