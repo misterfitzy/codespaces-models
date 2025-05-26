@@ -48,6 +48,10 @@ async function conversationLoop(client) {
             
             if (isUnexpected(response)) {
                 console.error("Error:", response.body.error);
+                // Add fallback response to maintain conversation flow
+                const fallbackContent = "I'm sorry, there was an unexpected error. Could you try again?";
+                console.log("AI:", fallbackContent);
+                conversation.push({ role: "assistant", content: fallbackContent });
                 continue;
             }
             
@@ -58,6 +62,10 @@ async function conversationLoop(client) {
                     !response.body.choices[0].message || 
                     !response.body.choices[0].message.content) {
                     console.error("Unexpected response structure:", JSON.stringify(response.body));
+                    // Add fallback response to maintain conversation flow
+                    const fallbackContent = "I'm sorry, I'm having trouble processing your request right now. Could you try again?";
+                    console.log("AI:", fallbackContent);
+                    conversation.push({ role: "assistant", content: fallbackContent });
                     continue;
                 }
                 
@@ -66,10 +74,18 @@ async function conversationLoop(client) {
                 conversation.push({ role: "assistant", content });
             } catch (error) {
                 console.error("Error processing response:", error);
+                // Add fallback response to maintain conversation flow
+                const fallbackContent = "I'm sorry, I encountered an error while processing your request. Could you try again?";
+                console.log("AI:", fallbackContent);
+                conversation.push({ role: "assistant", content: fallbackContent });
                 continue;
             }
         } catch (error) {
             console.error("API request error:", error);
+            // Add fallback response to maintain conversation flow
+            const fallbackContent = "I'm sorry, there was an error communicating with the API. Could you try again later?";
+            console.log("AI:", fallbackContent);
+            conversation.push({ role: "assistant", content: fallbackContent });
             continue;
         }
     }
