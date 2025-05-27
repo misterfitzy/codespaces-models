@@ -28,8 +28,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     ];
 
-    // Select a random personality
-    const selectedPersonality = personalities[Math.floor(Math.random() * personalities.length)];
+    // Select Microsoft personality by default or a random one if Microsoft is not available
+    const microsoftPersonality = personalities.find(p => p.name === "Microsoft Assistant");
+    const selectedPersonality = microsoftPersonality || personalities[Math.floor(Math.random() * personalities.length)];
     
     // Update the UI with the selected personality
     const personaDisplay = document.getElementById('persona-display');

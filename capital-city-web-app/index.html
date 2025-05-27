@@ -6,15 +6,15 @@
     <title>Capital City Query</title>
     <style>
         :root {
-            --primary-color: #4CAF50;
-            --secondary-color: #FFC107;
-            --tertiary-color: #2196F3;
-            --background-color: #f5f5f5;
+            --primary-color: #0078D4;
+            --secondary-color: #737373;
+            --tertiary-color: #107C10;
+            --background-color: #F2F2F2;
             --text-color: #333;
         }
         
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
             background-color: var(--background-color);
             margin: 0;
             padding: 20px;
@@ -93,6 +93,9 @@
         /* Metro UI style for Microsoft theme */
         .theme-microsoft .container {
             border-radius: 0;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
         }
         
         .theme-microsoft .persona,
@@ -106,10 +109,24 @@
         .theme-microsoft .persona {
             background-color: var(--primary-color);
             color: white;
+            padding: 20px;
+            font-size: 18px;
+        }
+        
+        .theme-microsoft button {
+            background-color: var(--primary-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .theme-microsoft button:hover {
             background-color: #106EBE;
+        }
+        
+        .theme-microsoft .response {
+            background-color: white;
+            border-left: 4px solid var(--primary-color);
         }
         
         .loading {
@@ -126,6 +143,13 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto;
+        }
+        
+        .theme-microsoft .loading-spinner {
+            border-radius: 0;
+            border: none;
+            border-left: 4px solid var(--primary-color);
+            border-top: 4px solid var(--primary-color);
         }
         
         @keyframes spin {
