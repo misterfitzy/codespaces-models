@@ -15,6 +15,16 @@ let distortionScale = 3.7;
 let waterSize = 500;
 let rippleStrength = 3;
 
+// Boat variables
+let boat, fisherman, fishingRod, fishingLine;
+let boatSpeed = 0.5;
+let boatDirection = new THREE.Vector3(1, 0, 1).normalize();
+let isFishing = false;
+let fishingTimer = 0;
+let fishingDuration = 10; // Fishing duration in seconds
+let movementDuration = 15; // Movement duration in seconds
+let movementTimer = 0;
+
 // DOM elements
 const distortionInput = document.getElementById('distortion-scale');
 const waterSizeInput = document.getElementById('water-size');
@@ -26,6 +36,99 @@ const imageInput = document.getElementById('background-image');
 
 // Initialize Three.js scene
 init();
+
+// Create a 3D boat model
+function createBoat() {
+    // Create a group for the boat and all its parts
+    const boatGroup = new THREE.Group();
+    
+    // Create boat hull
+    const hullGeometry = new THREE.BoxGeometry(10, 3, 20);
+    const hullMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x885511,
+        roughness: 0.7, 
+        metalness: 0.2 
+    });
+    const hull = new THREE.Mesh(hullGeometry, hullMaterial);
+    hull.position.y = 1;
+    boatGroup.add(hull);
+    
+    // Add boat details - deck
+    const deckGeometry = new THREE.BoxGeometry(8, 1, 16);
+    const deckMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xaa7744, 
+        roughness: 0.6,
+        metalness: 0.1
+    });
+    const deck = new THREE.Mesh(deckGeometry, deckMaterial);
+    deck.position.y = 3;
+    boatGroup.add(deck);
+    
+    // Add cabin
+    const cabinGeometry = new THREE.BoxGeometry(6, 4, 8);
+    const cabinMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xddaa77,
+        roughness: 0.5,
+        metalness: 0.1
+    });
+    const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
+    cabin.position.y = 5.5;
+    cabin.position.z = -2;
+    boatGroup.add(cabin);
+    
+    return boatGroup;
+}
+
+// Create a fisherman
+function createFisherman() {
+    const fishermanGroup = new THREE.Group();
+    
+    // Body
+    const bodyGeometry = new THREE.CylinderGeometry(0.7, 0.7, 3, 8);
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x3366aa });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 1.5;
+    fishermanGroup.add(body);
+    
+    // Head
+    const headGeometry = new THREE.SphereGeometry(0.8, 16, 16);
+    const headMaterial = new THREE.MeshStandardMaterial({ color: 0xffbb99 });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.position.y = 3.5;
+    fishermanGroup.add(head);
+    
+    // Hat
+    const hatGeometry = new THREE.ConeGeometry(1, 1, 8);
+    const hatMaterial = new THREE.MeshStandardMaterial({ color: 0x334455 });
+    const hat = new THREE.Mesh(hatGeometry, hatMaterial);
+    hat.position.y = 4.2;
+    fishermanGroup.add(hat);
+    
+    // Create fishing rod
+    const rodGeometry = new THREE.CylinderGeometry(0.1, 0.1, 8, 6);
+    const rodMaterial = new THREE.MeshStandardMaterial({ color: 0x663300 });
+    fishingRod = new THREE.Mesh(rodGeometry, rodMaterial);
+    fishingRod.position.set(2, 3, 0);
+    fishingRod.rotation.z = -0.3;
+    fishermanGroup.add(fishingRod);
+    
+    // Create fishing line
+    const lineGeometry = new THREE.BufferGeometry();
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+    
+    // Line starts at the end of the fishing rod
+    const lineStart = new THREE.Vector3(0, 4, 0);
+    const lineEnd = new THREE.Vector3(0, -5, 0);
+    lineGeometry.setFromPoints([lineStart, lineEnd]);
+    
+    fishingLine = new THREE.Line(lineGeometry, lineMaterial);
+    fishingLine.position.x = 4;
+    fishingLine.position.y = 0;
+    fishingLine.visible = false; // Initially hidden
+    fishermanGroup.add(fishingLine);
+    
+    return fishermanGroup;
+}
 
 // Create ripple effect at the mouse position
 function createRipple(x, y) {
@@ -238,6 +341,16 @@ function init() {
         }
     });
 
+    // Create and add boat
+    boat = createBoat();
+    boat.position.set(0, 1.5, 0);
+    scene.add(boat);
+    
+    // Create and add fisherman
+    fisherman = createFisherman();
+    fisherman.position.set(0, 3, 0);
+    boat.add(fisherman);
+    
     // Start animation loop
     animate();
 }
@@ -268,5 +381,84 @@ function animate() {
         });
     }
     
+    // Update boat and fishing state
+    updateBoat();
+    
     renderer.render(scene, camera);
+}
+
+// Update boat position and fishing state
+function updateBoat() {
+    const deltaTime = clock.getDelta();
+    
+    if (isFishing) {
+        // Update fishing timer
+        fishingTimer += deltaTime;
+        
+        // Animate fishing line bobbing
+        if (fishingLine && fishingLine.visible) {
+            const lineGeometry = fishingLine.geometry;
+            const positions = lineGeometry.getAttribute('position').array;
+            positions[5] = -5 + Math.sin(performance.now() * 0.003) * 0.5; // Move the end point up and down
+            lineGeometry.getAttribute('position').needsUpdate = true;
+        }
+        
+        // Check if fishing duration has passed
+        if (fishingTimer >= fishingDuration) {
+            // Stop fishing and make the boat move again
+            isFishing = false;
+            fishingTimer = 0;
+            movementTimer = 0;
+            
+            // Hide the fishing line
+            if (fishingLine) {
+                fishingLine.visible = false;
+            }
+            
+            // Reset direction for next movement phase
+            const angle = Math.random() * Math.PI * 2;
+            boatDirection.x = Math.cos(angle);
+            boatDirection.z = Math.sin(angle);
+            boatDirection.normalize();
+        }
+    } else {
+        // Boat is moving
+        movementTimer += deltaTime;
+        
+        // Move the boat
+        const moveX = boatDirection.x * boatSpeed * deltaTime;
+        const moveZ = boatDirection.z * boatSpeed * deltaTime;
+        boat.position.x += moveX;
+        boat.position.z += moveZ;
+        
+        // Orient the boat in the direction of movement
+        if (moveX !== 0 || moveZ !== 0) {
+            boat.lookAt(boat.position.x + boatDirection.x, boat.position.y, boat.position.z + boatDirection.z);
+        }
+        
+        // Create ripples as the boat moves
+        if (Math.random() < 0.1) {
+            createRipple(boat.position.x, boat.position.z);
+        }
+        
+        // Keep boat within water boundaries
+        const maxDistance = waterSize / 2 - 15;
+        if (Math.abs(boat.position.x) > maxDistance || Math.abs(boat.position.z) > maxDistance) {
+            // Reverse direction if getting too close to the edge
+            boatDirection.x *= -1;
+            boatDirection.z *= -1;
+        }
+        
+        // Check if movement duration has passed
+        if (movementTimer >= movementDuration) {
+            // Start fishing
+            isFishing = true;
+            fishingTimer = 0;
+            
+            // Show the fishing line
+            if (fishingLine) {
+                fishingLine.visible = true;
+            }
+        }
+    }
 }
