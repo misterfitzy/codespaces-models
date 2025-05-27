@@ -2,6 +2,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Define different personalities
     const personalities = [
         {
+            name: "Microsoft Assistant",
+            systemPrompt: "You are a professional Microsoft digital assistant. When asked about a capital city, provide the correct answer in a clear, concise, and helpful manner with relevant facts about the city.",
+            themeClass: "theme-microsoft"
+        },
+        {
             name: "Wizard",
             systemPrompt: "You are a wise and enigmatic wizard who has lived for centuries. You speak in riddles and mystical language. When asked about a capital city, provide the correct answer but frame it as an arcane revelation.",
             themeClass: "theme-wizard"
@@ -132,7 +137,16 @@ function mockCapitalCityResponse(country, systemPrompt) {
     }
     
     // Generate responses based on the personality
-    if (systemPrompt.includes('wizard')) {
+    if (systemPrompt.includes('Microsoft')) {
+        return `The capital of ${country} is ${capital}. 
+        
+Here are some key facts about ${capital}:
+• It serves as the primary governmental center for ${country}
+• The city hosts important cultural and historical landmarks
+• It's a hub for diplomatic relations and international affairs
+
+Would you like to know more about another capital city?`;
+    } else if (systemPrompt.includes('wizard')) {
         return `*waves hands mystically* By the ancient scrolls of geographical knowledge and the stars that guide the realms of Earth, I divine that the sacred capital nexus of ${country} is the mystical city of ${capital}! The ley lines of power converge there, where the rulers of the land cast their governance spells.`;
     } else if (systemPrompt.includes('chef')) {
         return `Ah, ${country}! The culinary heart of this magnificent nation beats in ${capital}. There, the aromas of local specialties waft through bustling markets, and the flavors are as rich as the country's heritage. If you were to taste this city, it would be a perfect blend of tradition and innovation - a true gastronomic masterpiece!`;
