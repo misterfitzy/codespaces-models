@@ -1,0 +1,21 @@
+{
+  "name": "water-animation-app",
+  "version": "1.0.0",
+  "description": "Web application with realistic water animation and refraction effects",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "water",
+    "animation",
+    "three.js",
+    "webgl",
+    "ripple",
+    "refraction"
+  ],
+  "author": "",
+  "license": "MIT"
+}
