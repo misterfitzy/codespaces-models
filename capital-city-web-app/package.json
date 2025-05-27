@@ -1,0 +1,15 @@
+{
+  "name": "capital-city-web-app",
+  "version": "1.0.0",
+  "description": "A colorful web app for capital city queries with multiple personalities",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "openai": "^4.52.7"
+  }
+}
