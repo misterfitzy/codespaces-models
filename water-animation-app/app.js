@@ -76,6 +76,19 @@ function createBoat() {
     cabin.position.z = -2;
     boatGroup.add(cabin);
     
+    // Add boat nose (front part)
+    const noseGeometry = new THREE.ConeGeometry(5, 8, 8);
+    const noseMaterial = new THREE.MeshStandardMaterial({
+        color: 0x885511,
+        roughness: 0.7,
+        metalness: 0.2
+    });
+    const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+    nose.position.z = 12;
+    nose.position.y = 1;
+    nose.rotation.x = Math.PI / 2;
+    boatGroup.add(nose);
+    
     return boatGroup;
 }
 
@@ -401,6 +414,13 @@ function updateBoat() {
             const positions = lineGeometry.getAttribute('position').array;
             positions[5] = -5 + Math.sin(performance.now() * 0.003) * 0.5; // Move the end point up and down
             lineGeometry.getAttribute('position').needsUpdate = true;
+            
+            // Create occasional water ripples at the fishing line end
+            if (Math.random() < 0.02) {
+                const lineEndX = boat.position.x + 4;
+                const lineEndZ = boat.position.z;
+                createRipple(lineEndX, lineEndZ);
+            }
         }
         
         // Check if fishing duration has passed
@@ -438,7 +458,7 @@ function updateBoat() {
         
         // Create ripples as the boat moves
         if (Math.random() < 0.1) {
-            createRipple(boat.position.x, boat.position.z);
+            createRipple(boat.position.x - (boatDirection.x * 8), boat.position.z - (boatDirection.z * 8)); // Create ripples behind the boat
         }
         
         // Keep boat within water boundaries
@@ -447,6 +467,7 @@ function updateBoat() {
             // Reverse direction if getting too close to the edge
             boatDirection.x *= -1;
             boatDirection.z *= -1;
+            boat.lookAt(boat.position.x + boatDirection.x, boat.position.y, boat.position.z + boatDirection.z);
         }
         
         // Check if movement duration has passed
