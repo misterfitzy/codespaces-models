@@ -4,8 +4,9 @@ A colorful web application that responds to capital city queries with various pe
 
 ## Features
 
-- Randomly selects a personality on each start (Wizard, Chef, Pirate, Shakespearean Scholar)
+- Randomly selects a personality on each start (Microsoft Assistant, Wizard, Chef, Pirate, Shakespearean Scholar)
 - Colorful UI theme that changes based on the selected personality
+- Metro-style interface option with Microsoft branding
 - Simple form for submitting country queries
 - Responses styled according to the selected personality
 
